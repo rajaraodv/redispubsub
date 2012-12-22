@@ -2,7 +2,7 @@
 
 <h1>A Node.js chat app using Express 3.x, Redis Pub/Sub + Socket.io + Socket.Sessions</h1>
 
-<h1>How to get the application running</h1>
+<h3>How to get the application running</h3>
 <ul>
 <li><a href="http://redis.io">Redis</a> must be installed and running.
 <li><a href="http://nodejs.org">Node.js</a> must be installed

@@ -1,7 +1,11 @@
 {
     "name":"redisPubSub",
- "description" : "Example Express app that demos routing, configurations & sessions",
-"version":"0.0.1",
+    "description":"A Node.js chat app using Express 3.x, Redis Pub/Sub + Socket.io + Socket.Sessions",
+    "author":{
+        "name":"Raja Rao DV",
+        "email":"rajar@vmware.com"
+    },
+    "version":"0.0.1",
     "private":true,
     "scripts":{
         "start":"node app"
