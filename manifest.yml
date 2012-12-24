@@ -3,12 +3,12 @@ applications:
 - name: redispubsub
   framework: node
   runtime: node08
-  memory: 64M
-  instances: 1
+  memory: 128M
+  instances: 4
   url: redispubsub.${target-base}
   path: .
   services:
-    redis-b2c43:
+    redis-57b72:
       vendor: redis
       version: '2.6'
       tier: free

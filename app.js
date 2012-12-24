@@ -1,58 +1,21 @@
-var express = require('express');
-var http = require('http');
+var express = require('express')
+    , routes = require('./routes')
+    , http = require('http')
+    , path = require('path')
+    , redis = require('redis');
 
+/*
+ Setup Express & Socket.io
+ */
 var app = express();
-var server = require('http').createServer(app);
+var server = http.createServer(app);
 var io = require('socket.io').listen(server);
-
-//Set Socket.io's log level to 1 (info). Default is 3 (debugging)
-io.set('log level', 1);
 
 //Set xhr-polling as WebSocket is not supported by CF
 io.set("transports", ["xhr-polling"]);
 
-var redis = require('redis');
-
-/*
- Create RedisStore and store Express sessions w/in Redis.
- */
-var RedisStore = require('connect-redis')(express),
-    sessionStore = new RedisStore({client:redis.createClient()}),
-    cookieParser = express.cookieParser('your secret sauce');
-
-app.configure(function () {
-    app.use(express.favicon());
-    app.use(express.logger('dev'));
-    app.use(express.bodyParser());
-    app.use(express.methodOverride());
-
-    /*
-     Use cookieParser and session middlewares together.
-
-     By default Express/Connect app creates a cookie by name 'connect.sid'.But to scale Socket.io app,
-     make sure to use cookie name 'jsessionid' (instead of connect.sid) use Cloud Foundry's 'Sticky Session' feature.
-     W/o this, Socket.io won't work if you have more than 1 instance.
-     If you are NOT running on Cloud Foundry, having cookie name 'jsessionid' doesn't hurt - it's just a cookie name.
-     */
-    app.use(cookieParser);
-    app.use(express.session({store:sessionStore, key:'jsessionid', secret:'your secret sauce'}));
-
-    app.use(app.router);
-    app.use(express.static(__dirname + '/public'));
-});
-
-app.configure('development', function () {
-    app.use(express.errorHandler());
-});
-
-/*
- Use SessionSockets so that we can exchange (set/get) user data b/w sockets and http sessions
- Pass 'jsessionid' (custom) cookie name that we are using to make use of Sticky sessions.
- */
-var SessionSockets = require('session.socket.io');
-var sessionSockets = new SessionSockets(io, sessionStore, cookieParser, 'jsessionid');
-
-server.listen(3000);
+//Set Socket.io's log level to 1 (info). Default is 3 (debugging)
+io.set('log level', 1);
 
 /*
  Create two redis connections. A 'pub' for publishing and a 'sub' for subscribing.
@@ -63,34 +26,92 @@ var pub = redis.createClient();
 sub.subscribe('chat');
 
 
-sessionSockets.on('connection', function (err, socket, session) {
-    sub.on('message', function (channel, message) {
-        socket.emit(channel, message);
-    });
+/*
+ Also use Redis for Session Store. Redis will keep all Express sessions in it.
+ */
+var RedisStore = require('connect-redis')(express),
+    rClient = redis.createClient(),
+    sessionStore = new RedisStore({client:rClient});
 
-    // Receive message from browser
+var cookieParser = express.cookieParser('your secret here');
+
+app.configure(function () {
+    app.set('port', process.env.PORT || 3000);
+    app.set('views', __dirname + '/views');
+    app.set('view engine', 'ejs');
+    app.use(express.favicon());
+    app.use(express.logger('dev'));
+    app.use(express.bodyParser());
+    app.use(express.methodOverride());
+
+    /*
+     Use cookieParser and session middlewares together.
+     By default Express/Connect app creates a cookie by name 'connect.sid'.But to scale Socket.io app,
+     make sure to use cookie name 'jsessionid' (instead of connect.sid) use Cloud Foundry's 'Sticky Session' feature.
+     W/o this, Socket.io won't work if you have more than 1 instance.
+     If you are NOT running on Cloud Foundry, having cookie name 'jsessionid' doesn't hurt - it's just a cookie name.
+     */
+    app.use(cookieParser);
+    app.use(express.session({store:sessionStore, key:'jsessionid', secret:'your secret here'}));
+
+    app.use(app.router);
+    app.use(express.static(path.join(__dirname, 'public')));
+});
+
+app.configure('development', function () {
+    app.use(express.errorHandler());
+});
+
+app.get('/', routes.index);
+
+/*
+ When the user logs in (in our case, does http POST w/ user name), store it
+ in Express session (which inturn is stored in Redis)
+ */
+app.post('/user', function (req, res) {
+    req.session.user = req.body.user;
+    res.json({"error":""});
+});
+
+/*
+ Use SessionSockets so that we can exchange (set/get) user data b/w sockets and http sessions
+ Pass 'jsessionid' (custom) cookie name that we are using to make use of Sticky sessions.
+ */
+var SessionSockets = require('session.socket.io');
+var sessionSockets = new SessionSockets(io, sessionStore, cookieParser, 'jsessionid');
+
+sessionSockets.on('connection', function (err, socket, session) {
+    /*
+     When the user sends a chat message, publish it to everyone (including myself) using
+     Redis' 'pub' client we created earlier.
+     Notice that we are getting user's name from session.
+     */
     socket.on('chat', function (data) {
         var msg = JSON.parse(data);
-        if (!msg.msg || msg.msg === '') return;
-
         var reply = JSON.stringify({action:'message', user:session.user, msg:msg.msg });
         pub.publish('chat', reply);
     });
 
-    //Listen & wait for user to Join. Store user info in session. Broadcast user has joined
-    socket.on('join', function (data) {
-        var msg = JSON.parse(data);
-        //store user to session (which itself is stored in Redis)
-        session.user = msg.user;
-
-        //broadcast a user logged in
-        var joinMessage = JSON.stringify({action:'control', user:session.user, msg:' joined the channel' });
-        pub.publish('chat', joinMessage);
+    /*
+     When a user joins the channel, publish it to everyone (including myself) using
+     Redis' 'pub' client we created earlier.
+     Notice that we are getting user's name from session.
+     */
+    socket.on('join', function () {
+        var reply = JSON.stringify({action:'control', user:session.user, msg:' joined the channel' });
+        pub.publish('chat', reply);
     });
 
-    //When user logs out, broadcast that.
-    socket.on('disconnect', function () {
-        var leaveMessage = JSON.stringify({action:'control', user:session.user, msg:' left the channel' });
-        pub.publish('chat', leaveMessage);
+    /*
+     Use Redis' 'sub' (subscriber) client to listen to any message from Redis to server.
+     When a message arrives, send it back to browser using socket.io
+     */
+    sub.on('message', function (channel, message) {
+        socket.emit(channel, message);
     });
+
+});
+
+server.listen(app.get('port'), function () {
+    console.log("Express server listening on port " + app.get('port'));
 });

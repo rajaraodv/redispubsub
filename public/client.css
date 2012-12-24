@@ -1,0 +1,111 @@
+* {
+    font-family: Georgia;
+}
+
+a {
+    color: #000;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+div.bordered {
+    margin: 0 auto;
+    width: 600px;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid #ddd;
+    -webkit-border-radius: 20px;
+}
+
+#error {
+    background-color: #BA0000;
+    color: #fff;
+    font-weight: bold;
+}
+
+#ask {
+    font-size: 20pt;
+}
+
+#ask input {
+    font-size: 20pt;
+    padding: 10px;
+    margin: 0 10px;
+}
+
+#ask span.join {
+    padding: 10px;
+    background-color: #ddd;
+    -webkit-border-radius: 10px;
+}
+
+#channel {
+    height: 480px;
+    position: relative;
+}
+
+#channel div#descr {
+    position: absolute;
+    left: -10px;
+    top: -190px;
+    font-size: 13px;
+    text-align: left;
+    line-height: 20px;
+    padding: 5px;
+    width: 630px;
+}
+
+div#msgs {
+    overflow-y: scroll;
+    height: 400px;
+}
+
+div#msgs ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+}
+
+div#msgs li {
+    line-height: 20px;
+}
+
+div#msgs li span.user {
+    color: #ff9900;
+}
+
+div#msgs li span.user.self {
+    color: #aa2211;
+}
+
+div#msgs li span.time {
+    float: right;
+    margin-right: 5px;
+    color: #aaa;
+    font-family: "Courier New";
+    font-size: 12px;
+}
+
+div#msgs li.control {
+    text-align: center;
+}
+
+div#msgs li.control span.message {
+    color: #aaa;
+}
+
+div#input {
+    text-align: left;
+    margin-top: 20px;
+}
+
+div#input #message {
+    width: 600px;
+    border: 5px solid #bbb;
+    -webkit-border-radius: 3px;
+    font-size: 30pt;
+}

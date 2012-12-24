@@ -1,0 +1,32 @@
+<script src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
+<script src='http://jquery-json.googlecode.com/files/jquery.json-2.2.min.js'></script>
+<script src='http://datejs.googlecode.com/svn/trunk/build/date.js'></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/client.js"></script>
+<link rel="stylesheet" href="/client.css"/>
+</head>
+<body>
+<div id="ask" class="bordered" style="display: none;">
+    Name: <input type="text" id="name"/> <a href="#"><span class="join">Join!</span></a>
+</div>
+<div id="channel" class="bordered" style="display: none;">
+
+    <div id="msgs">
+        <ul>
+            <li class="message" style="display: none">
+                <span class="user"></span><span class="message"></span>
+                <span class="time"></span>
+            </li>
+            <li class="control" style="display: none">
+                <span class="user"></span>&nbsp;<span class="message"></span>
+                <span class="time"></span>
+            </li>
+        </ul>
+    </div>
+    <div id="input">
+        <form><input type="text" id="message"/></form>
+    </div>
+</div>
+
+</body>
+</html>

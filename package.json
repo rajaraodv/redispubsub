@@ -1,10 +1,5 @@
 {
-    "name":"redisPubSub",
-    "description":"A Node.js chat app using Express 3.x, Redis Pub/Sub + Socket.io + Socket.Sessions",
-    "author":{
-        "name":"Raja Rao DV",
-        "email":"rajar@vmware.com"
-    },
+    "name":"redispubsub",
     "version":"0.0.1",
     "private":true,
     "scripts":{
@@ -12,10 +7,10 @@
     },
     "dependencies":{
         "express":"3.x",
-        "socket.io":"*",
-        "jade":"*",
-        "connect-redis":"*",
-        "redis":"*",
-        "session.socket.io":"*"
+        "ejs":"*",
+        "socket.io":"*" ,
+        "session.socket.io":"*",
+        "redis": "*",
+        "connect-redis": "*"
     }
 }
