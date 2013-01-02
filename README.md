@@ -70,7 +70,8 @@ In the above diagram, when you open the app,
 ## Sending session info to Socket.io 
 Let's imagine that the user is logging in via Twitter or Facebook or we have regular login screen. And we are storing this information in a session after the user has logged in.
 
-```
+```javascript
+
 app.post('/login', function(req, res) {
    //store user info in session after login.
   req.session.user = req.body.user;
@@ -82,7 +83,7 @@ And once the user has logged in, we connect to Socket.io to allow chatting. But 
 
 That's where `sessions.sockets.io` library comes in. It's a very simple library, all it does is to grab session information during handshake & gives it to Socket.io's `connection` function.
 
-```
+```javascript
 //instead of
 io.sockets.on('connection', function(socket) {
  //do pubsub here
@@ -119,7 +120,7 @@ So far so good, but all these sesssion information is stored in Socket.io's Memo
 
 So we will configure our app to use Redis as session store like below.
 
-```
+```javascript
 /*
  Use Redis for Session Store. Redis will keep all Express sessions in it.
  */
@@ -152,7 +153,7 @@ i.e. if user1 & user2 are on server instance #1, they both can chat with each ot
 
 So we will update our server to use Redis as PubSub service (along with session-store). PS: Redis natively supports pub-sub operations. All we need to do is to create a publisher, a subscriber & a channel and we will be good. 
 
-```
+```javascript
 //instead of using socket.io's default pub-sub..
 
 sessionSockets.on('connection', function (err, socket, session) {
@@ -213,7 +214,7 @@ But let's first understand what happens in that situation.
 
 The below code simply connects a browser to server and listens to various Socket.io's events.
 
-```
+```javascript
     /*
          Connect to socket.io on the server (***BEFORE FIX***).
          */
@@ -275,7 +276,7 @@ First, we will disable Socket.io's default "reconnect" feature. And then impleme
 In our custom reconnection function, When the server goes down, we'll make a dummy HTTP-get call to index.html every 4-5 seconds.
 	      And if the call succeeds, we know that (Express) server has already set ***jsessionid*** in the response. So then we'll call socket.io's reconnect function. And this time because jsessionid is set, socket.io's handshake will succeed and the user will get to continue chatting happily.
 	      
-```
+```javascript
 
     /*
       Connect to socket.io on the server (*** FIX ***).
@@ -326,7 +327,7 @@ In our custom reconnection function, When the server goes down, we'll make a dum
 
 In addition, on the server, when the dummy-http request comes in, we will ***regenerate*** session to remove old session & sessionid and ensure everything is afresh before we serve the response.
 
-```
+```javascript
 //Instead of..
 exports.index = function (req, res) {
     res.render('index', { title:'RedisPubSubApp',  user:req.session.user});
