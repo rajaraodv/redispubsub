@@ -427,6 +427,14 @@ Checking redispubsub... OK
 
 
 
+## General Notes ####
+* If you don't have Node.js, download it from <a href='http://nodejs.org' target='_blank'>here</a>
+* If you don't have a Cloud Foundry account, sign up for it <a href='https://my.cloudfoundry.com/signup' target='_blank'>here</a>  
+* Check out Cloud Foundry getting started <a href='http://docs.cloudfoundry.com/getting-started.html' target='_blank'>here</a> & install `vmc` Ruby command line tool to push apps.
+
+* To install ***latest alpha or beta*** `vmc` tool run: `sudo gem install vmc ---pre`
+
+
 ####Credits####
 <p>
 PS: Front end UI: <a href="https://github.com/steffenwt/nodejs-pub-sub-chat-demo">https://github.com/steffenwt/nodejs-pub-sub-chat-demo</a></p>
