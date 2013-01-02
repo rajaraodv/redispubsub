@@ -20,12 +20,12 @@ Specifically, we will be building an Express based Chat app that uses Socket.io 
 ***Login page***
 
 <p align='center'>
-<img src=""https://github.com/rajaraodv/redispubsub/raw/master/pics/chatAppPage1.png" height="" width="450px" />
+<img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/chatAppPage1.png" height="" width="450px" />
 </p>
 
 ***Chat page***
 <p align='center'>
-<img src=""https://github.com/rajaraodv/redispubsub/raw/master/pics/chatAppPage2.png" height="" width="450px" />
+<img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/chatAppPage2.png" height="" width="450px" />
 </p>
 
 
