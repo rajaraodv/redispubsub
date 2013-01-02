@@ -7,7 +7,7 @@
 One of the most common things people build on Node.js are real-time apps like chat apps or social-networking apps etc.
  
 The main objective of this project is to show how to build a real-time apps that can scale on Cloud Foundry. 
-And secondly show how to handle some of the common issues such apps face when server instaces are scaled up or when server instaces go down in a PaaS environment.
+And secondly show how to handle some of the common issues such apps face when server instances are scaled up or when server instaces go down in a PaaS environment.
 
 Specifically, we will be building an Express based Chat app that uses Socket.io & Redis that shows:
 
@@ -28,7 +28,7 @@ But when you run such a server in the cloud that has load-balancer/ reverse prox
 One of the constraints Socket.io and SockJS etc. have is that they need to continiously talk to the <i><b>same instance</b></i> of the server. They work perfectly fine when there is only 1 instance of the server.
 
 <p align='center'>
-<img src="pics/socketio1Instance.png" height="300px" width="450px" />
+<img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketio1Instance.png" height="300px" width="450px" />
 </p>
 
 
@@ -37,7 +37,7 @@ One of the constraints Socket.io and SockJS etc. have is that they need to conti
 <br>
 But when you scale your app in a cloud environment, the load balancer will take over and starts to send the requests are sent to different instances causing Socket.io to break.
 <p align='center'>
-<img src="pics/socketioBreaks.png" height="300px" width="450px" />
+<img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketioBreaks.png" height="300px" width="450px" />
 </p>
 
 <br>
@@ -49,7 +49,7 @@ In Cloud Foundry, cookie based sticky sessions are enabled for apps that sets co
 
 So all the apps need to do is to set a cookie w/ name <b>jsessionid</b> to make Socket.io work.
 <p align='center'>
-<img src="pics/socketioWorks.png" height="300px" width="450px" />
+<img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketioWorks.png" height="300px" width="450px" />
 </p>
 In the above diagram, when you open the app, 
 
@@ -99,7 +99,7 @@ sessionSockets.on('connection', function (err, socket, session) {
 ```
 
 <p align='center'>
-<img src="pics/sendingSession2SocketIO.png" height="300px" width="450px" />
+<img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/sendingSession2SocketIO.png" height="300px" width="450px" />
 </p>
 
 
@@ -129,7 +129,7 @@ var sessionStore = new RedisStore({client:rClient});
 ```
 
 <p align='center'>
-<img src="pics/redisAsSessionStore.png" height="300px" width="450px" />
+<img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/redisAsSessionStore.png" height="300px" width="450px" />
 </p>
 
 
@@ -192,7 +192,7 @@ sessionSockets.on('connection', function (err, socket, session) {
 
 So the app's architecture will now look like this:
 <p align='center'>
-<img src="pics/redisAsSSAndPS.png" height="300px" width="500px" />
+<img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/redisAsSSAndPS.png" height="300px" width="500px" />
 </p>
 <br>
 <br>
@@ -242,14 +242,14 @@ The below code simply connects a browser to server and listens to various Socket
 While the user is chatting, if we restart the app **on localhost or single host**, Socket.io attempts to reconnect multiple times (configuration) to see if it can connect. If the server comes up w/in that time, it will reconnect. So we see the below logs:
 
 <p align='center'>
-<img src="pics/reconnectOn1server.png" height="300px" width="600px" />
+<img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/reconnectOn1server.png" height="300px" width="600px" />
 </p>
 
 <br>
 But, if the user is chatting on the same app that's running ***on Cloud Foundry AND with multiple instances***, and if we restart the server (say using `vmc restart redispubsub`)
 then we'll see the following log:
 <p align='center'>
-<img src="pics/reconnectOnMultiServer.png" height="400px" width="600px" />
+<img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/reconnectOnMultiServer.png" height="400px" width="600px" />
 </p>
 
 You can see that in the above logs, after the server comes back up, Socket.io -client(that's running in the browser) isn't able to connect to Socket.io-server(that's running in the server). 
