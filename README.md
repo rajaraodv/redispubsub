@@ -4,18 +4,16 @@
 <br>
 
 ## Chat App ##
-One of the most common things people build on Node.js are real-time apps like chat apps, social-networking apps etc. There are lots of examples of how to build such an app on the web but it's hard to find an example that shows how to configure  apps running in the cloud with multiple instances, how to deal w/ app sessions, sticky sessions, how to deal w/ server scale up/down, crash or restart etc.
+One of the most common things people build on Node.js are real-time apps like chat apps, social-networking apps etc. And there are plenty of examples showing how to build such apps on the web. But it's hard to find an example that shows how to deal with real-time apps that are scaled & are running in the cloud/PaaS with multiple instances & deal with issues like app sessions, sticky sessions, scale-up/down, instance crash/restart etc in such an environment.
  
-So the main objective of this project is to show how to build a real-time apps that can horizontally scale on a PaaS environment like Cloud Foundry. 
-And secondly show how to handle some of the common issues such apps face like: dealing with app sessions, sticky sessions, server scaling, server restart/crash etc. in a multi-instance PaaS environment.
+The main objective of this project is to build a simple chat app and tackle such issues. Specifically, we will be building a simple Express, Socket.io & Redis based Chat app that should meet the following objectives:
 
-Specifically, we will be building an Express based Chat app that uses Socket.io & Redis that shows:
-
-1. How to use Socket.io & Sticky Sessions.
-2. How to use Redis as session store 
-3. How to use Redis as a pubsub service.
-4. How to use sessions.sockets.io to get session info (like user info) from Express sessions.
-5. How to configure Socket.io client to properly reconnect after one or more server instances goes down (restarted / scaled down / crashes).
+1. Chat server should run on multiple instance.
+2. User's login should be saved in a session.
+    * If the user refreshes the browser, he should be relogged in.
+    * Socket.io should get user info from the session before sending chat-message 
+   * Socket.io should only connect if user is already logged in.
+3. While the user is chatting, if the server to which he is connected is restarted / scaled-down, the user should be reconnected to available instance w/o bouncing him. 
 
 ***Login page:***
 
@@ -27,6 +25,16 @@ Specifically, we will be building an Express based Chat app that uses Socket.io 
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/chatAppPage2.png" height="" width="450px" />
 </p>
+
+<br>
+***Along the way, we will go over:***
+
+1. How to use Socket.io & Sticky Sessions.
+2. How to use Redis as session store 
+3. How to use Redis as a pubsub service.
+4. How to use sessions.sockets.io to get session info (like user info) from Express sessions.
+5. How to configure Socket.io client & server to properly reconnect after one or more server instances goes down ( i.e. has been restarted / scaled down / has crashed).
+
 
 
 ## Socket.io & Sticky Sessions ##
@@ -75,10 +83,11 @@ Let's imagine that the user is logging in via Twitter or Facebook or we have reg
 app.post('/login', function(req, res) {
    //store user info in session after login.
   req.session.user = req.body.user;
-  …
-  …
+  ...
+  ...
 });
 ```
+
 And once the user has logged in, we connect to Socket.io to allow chatting. But socket.io doesn't know who the user is & he is actually logged in before sending chat messages to others.
 
 That's where `sessions.sockets.io` library comes in. It's a very simple library, all it does is to grab session information during handshake & gives it to Socket.io's `connection` function.
@@ -102,10 +111,7 @@ sessionSockets.on('connection', function (err, socket, session) {
    
   //do pubsub
   socket.emit('chat', {user: user, msg: 'logged in'});
-  …
-  …
-  
-  
+  ...
 });
 ```
 
@@ -131,12 +137,11 @@ var sessionStore = new RedisStore({client:rClient});
     
     
   //And pass sessionStore to Express's 'session' middleware's 'store' value.
-     …
-     …  
+     ...
+     ...  
     app.use(express.session({store:sessionStore, key:'jsessionid', secret:'your secret here'})); 
-     …
-       
-    
+     ...
+
 ```
 
 <p align='center'>
@@ -146,7 +151,7 @@ var sessionStore = new RedisStore({client:rClient});
 
 With the above configuration, sessions will now be stored in Redis. And also, if one of the server instances goes down, session will still be available for other instances to pick up.
     
-
+<br>
 ##Redis as pub-sub server
 So far with the above setup our sessions are taken care of but if we are using Socket.io's default pub-sub, it will work only for 1 sever instance.
 i.e. if user1 & user2 are on server instance #1, they both can chat with each other. But if they are on different server instances they can't.
@@ -287,16 +292,16 @@ In our custom reconnection function, When the server goes down, we'll make a dum
         var socket = io.connect('http://' + host, {reconnect:false, 'try multiple transports':false});
         var intervalID;
         var reconnectCount = 0;
-		…
-		…
+		...
+		...
         socket.on('disconnect', function () {
             console.log('disconnect');
             
             //Retry reconnecting every 4 seconds
             intervalID = setInterval(tryReconnect, 4000);
         });
-       …
-       …
+       ...
+       ...
       
         
 
