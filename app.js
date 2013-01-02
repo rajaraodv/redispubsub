@@ -10,6 +10,18 @@ var express = require('express')
 var app = express();
 var server = http.createServer(app);
 var io = require('socket.io').listen(server);
+//var sRedisStore = require('socket.io/lib/stores/redis')
+//    , sRedis  = require('socket.io/node_modules/redis')
+//    , sPub    = sRedis.createClient()
+//    , sSub    = sRedis.createClient()
+//    , sClient = sRedis.createClient();
+//
+//io.set('store', new sRedisStore({
+//    redisPub : sPub
+//    , redisSub : sSub
+//    , redisClient : sClient
+//}));
+
 
 //Set xhr-polling as WebSocket is not supported by CF
 io.set("transports", ["xhr-polling"]);
@@ -17,13 +29,7 @@ io.set("transports", ["xhr-polling"]);
 //Set Socket.io's log level to 1 (info). Default is 3 (debugging)
 io.set('log level', 1);
 
-/*
- Create two redis connections. A 'pub' for publishing and a 'sub' for subscribing.
- Subscribe 'sub' connection to 'chat' channel.
- */
-var sub = redis.createClient();
-var pub = redis.createClient();
-sub.subscribe('chat');
+
 
 
 /*
@@ -32,6 +38,10 @@ sub.subscribe('chat');
 var RedisStore = require('connect-redis')(express),
     rClient = redis.createClient(),
     sessionStore = new RedisStore({client:rClient});
+
+//var MemoryStore = express.session.MemoryStore;
+//
+//var sessionStore = new MemoryStore();
 
 var cookieParser = express.cookieParser('your secret here');
 
@@ -64,6 +74,11 @@ app.configure('development', function () {
 
 app.get('/', routes.index);
 
+app.get('/logout', function(req, res) {
+    req.session.destroy();
+    res.redirect('/');
+});
+
 /*
  When the user logs in (in our case, does http POST w/ user name), store it
  in Express session (which inturn is stored in Redis)
@@ -80,7 +95,21 @@ app.post('/user', function (req, res) {
 var SessionSockets = require('session.socket.io');
 var sessionSockets = new SessionSockets(io, sessionStore, cookieParser, 'jsessionid');
 
+var serverName = process.env.VCAP_APP_HOST ? process.env.VCAP_APP_HOST + ":" + process.env.VCAP_APP_PORT : 'localhost:3000';
+console.log("**********Server: " + serverName);
+
+/*
+ Create two redis connections. A 'pub' for publishing and a 'sub' for subscribing.
+ Subscribe 'sub' connection to 'chat' channel.
+ */
+var sub = redis.createClient();
+var pub = redis.createClient();
+sub.subscribe('chat');
+
 sessionSockets.on('connection', function (err, socket, session) {
+    console.log("***** in connection");
+
+
     /*
      When the user sends a chat message, publish it to everyone (including myself) using
      Redis' 'pub' client we created earlier.
@@ -110,7 +139,29 @@ sessionSockets.on('connection', function (err, socket, session) {
         socket.emit(channel, message);
     });
 
+    socket.on('disconnect', function (channel, message) {
+        console.log('** disconnected');
+        var reply = JSON.stringify({action:'control', user:session.user, msg:' left the channel' });
+        pub.publish('chat', reply);
+
+    });
+
+//    socket.on('chat', function(data){
+//        var msg = JSON.parse(data);
+//        var reply = JSON.stringify({action: 'message', user: session.user, msg: msg.msg });
+//        socket.emit('chat', reply);
+//        socket.broadcast.emit('chat', reply);
+//    });
+//
+//    socket.on('join', function(data){
+//        var msg = JSON.parse(data);
+//        var reply = JSON.stringify({action: 'control', user: session.user, msg: ' joined the channel' });
+//        socket.emit('chat', reply);
+//        socket.broadcast.emit('chat', reply);
+//
+//    });
 });
+
 
 server.listen(app.get('port'), function () {
     console.log("Express server listening on port " + app.get('port'));

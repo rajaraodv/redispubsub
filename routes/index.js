@@ -1,14 +1,14 @@
-
 /*
  * GET home page.
  */
+var serverName = process.env.VCAP_APP_HOST ? process.env.VCAP_APP_HOST + ":" + process.env.VCAP_APP_PORT : 'localhost:3000';
 
-exports.index = function(req, res){
-    /*
-     Regenerate session to ensure we don't reuse old session. Regenerate also updates session in Redis/Memory store.
-     So this helps clean up old stuff when we upgrade the server that has multiple-instances + using sticky-session.
-     */
-    req.session.regenerate(function(err) {
-        res.render('index');
+exports.index = function (req, res) {
+    //save user from previous session (if it exists)
+    var user = req.session.user;
+    //regenerate new session & store user from previous session (if it exists)
+    req.session.regenerate(function (err) {
+        req.session.user = user;
+        res.render('index', { title:'Express', server:serverName, user:req.session.user});
     });
 };

@@ -1,15 +1,21 @@
 $(document).ready(function () {
-
+    //Check if the user is rejoining
+    //ps: This value is set by Express if browser session is still valid
+    var user = $('#user').text();
     // show join box
-    $('#ask').show();
-    $('#ask input').focus();
+    if (user === "") {
+        $('#ask').show();
+        $('#ask input').focus();
+    } else { //rejoin using old session
+        join(user);
+    }
 
     // join on enter
     $('#ask input').keydown(function (event) {
         if (event.keyCode == 13) {
             $('#ask a').click();
         }
-    })
+    });
 
     /*
      When the user joins, hide the join-field, display chat-widget and also call 'join' function that
@@ -17,26 +23,70 @@ $(document).ready(function () {
      */
     $('#ask a').click(function () {
         join($('#ask input').val());
-        $('#ask').hide();
-        $('#channel').show();
-        $('input#message').focus();
     });
 
     function join(name) {
+        $('#ask').hide();
+        $('#channel').show();
+        $('input#message').focus();
         /*
          Connect to socket.io on the server.
          */
         var host = window.location.host.split(':')[0];
-        var socket = io.connect('http://' + host);
+        var socket = io.connect('http://' + host, {reconnect:false, 'try multiple transports':false});
+        var intervalID;
+        var reconnectCount = 0;
+
+        socket.on('connect', function () {
+            console.log('connected');
+        });
+        socket.on('connecting', function () {
+            console.log('connecting');
+        });
+        socket.on('disconnect', function () {
+            console.log('disconnect');
+            intervalID = setInterval(tryReconnect, 4000);
+        });
+        socket.on('connect_failed', function () {
+            console.log('connect_failed');
+        });
+        socket.on('error', function (err) {
+            console.log('error: ' + err);
+        });
+        socket.on('reconnect_failed', function () {
+            console.log('reconnect_failed');
+        });
+        socket.on('reconnect', function () {
+            console.log('reconnected ');
+        });
+        socket.on('reconnecting', function () {
+            console.log('reconnecting');
+        });
+
+        var tryReconnect = function () {
+            ++reconnectCount;
+            if (reconnectCount == 5) {
+                clearInterval(intervalID);
+            }
+            console.log('Making a dummy http call to set jsessionid (before we do socket.io reconnect)');
+            $.ajax('/')
+                .success(function () {
+                    console.log("http request succeeded");
+                    //reconnect the socket AFTER we got jsessionid set
+                    socket.socket.reconnect();
+                    clearInterval(intervalID);
+                }).error(function (err) {
+                    console.log("http request failed (probably server not up yet)");
+                });
+        };
 
         /*
          When the user Logs in, send a HTTP POST to server w/ user name.
          */
         $.post('/user', {"user":name})
             .success(function () {
-                console.log("success");
                 // send join message
-                socket.emit('join', $.toJSON({ }));
+                socket.emit('join', JSON.stringify({}));
             }).error(function () {
                 console.log("error");
             });
@@ -47,7 +97,7 @@ $(document).ready(function () {
          When a message comes from the server, format, colorize it etc. and display in the chat widget
          */
         socket.on('chat', function (msg) {
-            var message = $.evalJSON(msg);
+            var message = JSON.parse(msg);
 
             var action = message.action;
             var struct = container.find('li.' + action + ':first');
@@ -98,7 +148,7 @@ $(document).ready(function () {
             event.preventDefault();
             var input = $(this).find(':input');
             var msg = input.val();
-            socket.emit('chat', $.toJSON({action:'message', msg:msg}));
+            socket.emit('chat', JSON.stringify({action:'message', msg:msg}));
             input.val('');
         });
 
