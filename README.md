@@ -4,10 +4,10 @@
 <br>
 
 ## Chat App ##
-One of the most common things people build on Node.js are real-time apps like chat apps or social-networking apps etc.
+One of the most common things people build on Node.js are real-time apps like chat apps, social-networking apps etc. There are lots of examples of how to build such an app on the web but it's hard to find an example that shows how to configure  apps running in the cloud with multiple instances, how to deal w/ app sessions, sticky sessions, how to deal w/ server scale up/down, crash or restart etc.
  
-The main objective of this project is to show how to build a real-time apps that can scale on Cloud Foundry. 
-And secondly show how to handle some of the common issues such apps face when server instances are scaled up or when server instaces go down in a PaaS environment.
+So the main objective of this project is to show how to build a real-time apps that can horizontally scale on a PaaS environment like Cloud Foundry. 
+And secondly show how to handle some of the common issues such apps face like: dealing with app sessions, sticky sessions, server scaling, server restart/crash etc. in a multi-instance PaaS environment.
 
 Specifically, we will be building an Express based Chat app that uses Socket.io & Redis that shows:
 
@@ -15,15 +15,15 @@ Specifically, we will be building an Express based Chat app that uses Socket.io 
 2. How to use Redis as session store 
 3. How to use Redis as a pubsub service.
 4. How to use sessions.sockets.io to get session info (like user info) from Express sessions.
-5. How to configure Socket.io client to reconnect after a server goes down
+5. How to configure Socket.io client to properly reconnect after one or more server instances goes down (restarted / scaled down / crashes).
 
-***Login page***
+***Login page:***
 
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/chatAppPage1.png" height="" width="450px" />
 </p>
 
-***Chat page***
+***Chat page:***
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/chatAppPage2.png" height="" width="450px" />
 </p>
@@ -347,17 +347,85 @@ exports.index = function (req, res) {
 
 ```
 
+## Running / Testing it on Cloud Foundry ##
+* Clone this app to `redispubsub` folder
+* ` cd redispubsub`
+* `npm install` & follow the below instructions to push the app to Cloud Foundry
 
-<h3>Getting started:</h3>
-<ul>
-<li><a href="http://nodejs.org">Node.js</a> must be installed
-<li>`cd socketiopubsub` & run `npm install` </li>
-<li>`$ node app.js` </li>
+```
+
+[~/success/git/redispubsub]
+> vmc push redispubsub
+Instances> 4       <----- Run 4 instances of the server
+
+1: node
+2: other
+Framework> node
+
+1: node
+2: node06
+3: node08
+4: other
+Runtime> 3  <---- Choose Node.js 0.8v
+
+1: 64M
+2: 128M
+3: 256M
+4: 512M
+Memory Limit> 64M
+
+Creating redispubsub... OK
+
+1: redispubsub.cloudfoundry.com
+2: none
+URL> redispubsub.cloudfoundry.com  <--- URL of the app (choose something unique)
+
+Updating redispubsub... OK
+
+Create services for application?> y
+
+1: blob 0.51
+2: mongodb 2.0
+3: mysql 5.1
+4: postgresql 9.0
+5: rabbitmq 2.4
+6: redis 2.6
+7: redis 2.4
+8: redis 2.2
+What kind?> 6 <----- Select & Add Redis 2.6v service
+
+Name?> redis-e9771 <-- This is just random name for Redis service
+
+Creating service redis-e9771... OK
+Binding redis-e9771 to redispubsub... OK
+Create another service?> n
+
+Bind other services to application?> n
+
+Save configuration?> n
+
+Uploading redispubsub... OK
+Starting redispubsub... OK
+Checking redispubsub... OK
+
+```
+* Once the server is up,o open up multiple browsers and go do `<servername>.cloudfoundry.com`
+* Start chatting.
+
+#### Test 1 ####
+
+* Refresh the browser.
+* You should automatically be logged in.
 
 
-Fire up your favorite browser and go to "localhost:3000". Open more browser windows to see it in work.
+#### Test 2 ####
 
-Push app to Cloud Foundry and scale it to have multiple instances to see sticky sessions in action.
+* Open up JS debugger (On Chrome, do `cmd + alt +j` )
+* Restart the server by doing `vmc restart <appname>`
+* Once the server restarts, Socket.io should automatically reconnect
+* You should be able to chat after the reconnection.
+
+
 
 ####Credits####
 <p>
