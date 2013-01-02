@@ -17,6 +17,16 @@ Specifically, we will be building an Express based Chat app that uses Socket.io 
 4. How to use sessions.sockets.io to get session info (like user info) from Express sessions.
 5. How to configure Socket.io client to reconnect after a server goes down
 
+***Login page***
+
+<p align='center'>
+<img src=""https://github.com/rajaraodv/redispubsub/raw/master/pics/chatAppPage1.png" height="" width="450px" />
+</p>
+
+***Chat page***
+<p align='center'>
+<img src=""https://github.com/rajaraodv/redispubsub/raw/master/pics/chatAppPage2.png" height="" width="450px" />
+</p>
 
 
 ## Socket.io & Sticky Sessions ##
