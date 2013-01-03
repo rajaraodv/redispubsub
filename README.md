@@ -1,6 +1,6 @@
 
 
-#Scaling real-time apps on Cloud Foundry#
+#Scaling real-time apps on Cloud Foundry (using Redis)#
 <br>
 
 ## Chat App ##
@@ -66,6 +66,19 @@ To help in such situations, load balancers have feature called 'sticky sessions'
 In Cloud Foundry, cookie based sticky sessions are enabled for apps that sets cookie <b>jsessionid</b>.
 
 So all the apps need to do is to set a cookie w/ name <b>jsessionid</b> to make Socket.io work.
+
+```
+    /*
+     Use cookieParser and session middlewares together.
+     By default Express/Connect app creates a cookie by name 'connect.sid'.But to scale Socket.io app,
+     make sure to use cookie name 'jsessionid' (instead of connect.sid) use Cloud Foundry's 'Sticky Session' feature.
+     W/o this, Socket.io won't work if you have more than 1 instance.
+     If you are NOT running on Cloud Foundry, having cookie name 'jsessionid' doesn't hurt - it's just a cookie name.
+     */
+    app.use(cookieParser);
+    app.use(express.session({store:sessionStore, key:'jsessionid', secret:'your secret here'}));
+```
+
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketioWorks.png" height="300px" width="450px" />
 </p>
@@ -100,6 +113,14 @@ io.sockets.on('connection', function(socket) {
 })
 
 // with sessions.sockets.io, you'll get session info
+
+/*
+ Use SessionSockets so that we can exchange (set/get) user data b/w sockets and http sessions
+ Pass 'jsessionid' (custom) cookie name that we are using to make use of Sticky sessions.
+ */
+var SessionSockets = require('session.socket.io');
+var sessionSockets = new SessionSockets(io, sessionStore, cookieParser, 'jsessionid');
+
 sessionSockets.on('connection', function (err, socket, session) {
 
   //get info from session

@@ -10,17 +10,6 @@ var express = require('express')
 var app = express();
 var server = http.createServer(app);
 var io = require('socket.io').listen(server);
-//var sRedisStore = require('socket.io/lib/stores/redis')
-//    , sRedis  = require('socket.io/node_modules/redis')
-//    , sPub    = sRedis.createClient()
-//    , sSub    = sRedis.createClient()
-//    , sClient = sRedis.createClient();
-//
-//io.set('store', new sRedisStore({
-//    redisPub : sPub
-//    , redisSub : sSub
-//    , redisClient : sClient
-//}));
 
 
 //Set xhr-polling as WebSocket is not supported by CF
@@ -28,8 +17,6 @@ io.set("transports", ["xhr-polling"]);
 
 //Set Socket.io's log level to 1 (info). Default is 3 (debugging)
 io.set('log level', 1);
-
-
 
 
 /*
@@ -95,8 +82,6 @@ app.post('/user', function (req, res) {
 var SessionSockets = require('session.socket.io');
 var sessionSockets = new SessionSockets(io, sessionStore, cookieParser, 'jsessionid');
 
-var serverName = process.env.VCAP_APP_HOST ? process.env.VCAP_APP_HOST + ":" + process.env.VCAP_APP_PORT : 'localhost:3000';
-console.log("**********Server: " + serverName);
 
 /*
  Create two redis connections. A 'pub' for publishing and a 'sub' for subscribing.
@@ -107,8 +92,7 @@ var pub = redis.createClient();
 sub.subscribe('chat');
 
 sessionSockets.on('connection', function (err, socket, session) {
-    console.log("***** in connection");
-
+    if(!session.user) return;
 
     /*
      When the user sends a chat message, publish it to everyone (including myself) using
@@ -139,30 +123,10 @@ sessionSockets.on('connection', function (err, socket, session) {
         socket.emit(channel, message);
     });
 
-    socket.on('disconnect', function (channel, message) {
-        console.log('** disconnected');
-        var reply = JSON.stringify({action:'control', user:session.user, msg:' left the channel' });
-        pub.publish('chat', reply);
-
-    });
-
-//    socket.on('chat', function(data){
-//        var msg = JSON.parse(data);
-//        var reply = JSON.stringify({action: 'message', user: session.user, msg: msg.msg });
-//        socket.emit('chat', reply);
-//        socket.broadcast.emit('chat', reply);
-//    });
-//
-//    socket.on('join', function(data){
-//        var msg = JSON.parse(data);
-//        var reply = JSON.stringify({action: 'control', user: session.user, msg: ' joined the channel' });
-//        socket.emit('chat', reply);
-//        socket.broadcast.emit('chat', reply);
-//
-//    });
 });
 
 
 server.listen(app.get('port'), function () {
-    console.log("Express server listening on port " + app.get('port'));
+    var serverName = process.env.VCAP_APP_HOST ? process.env.VCAP_APP_HOST + ":" + process.env.VCAP_APP_PORT : 'localhost:3000';
+    console.log("Express server listening on " + serverName);
 });
