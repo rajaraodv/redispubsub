@@ -43,7 +43,7 @@ The main objective of this project is to build a simple chat app and tackle such
 
 But when you run such a server in the cloud that has load-balancer/ reverse proxy, routers etc, you need to configure it work properly especially when you scale the server to use multiple instances.
 
-One of the constraints Socket.io and SockJS etc. have is that they need to continiously talk to the <i><b>same instance</b></i> of the server. They work perfectly fine when there is only 1 instance of the server.
+One of the constraints Socket.io and SockJS etc. have is that they need to continuously talk to the <i><b>same instance</b></i> of the server. They work perfectly fine when there is only 1 instance of the server.
 
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketio1Instance.png" height="300px" width="450px" />
