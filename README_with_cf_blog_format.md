@@ -1,7 +1,7 @@
 One of the most common things people build on Node.js are real-time apps like chat apps, social-networking apps etc. There are plenty of examples showing how to build such apps on the web, but it’s hard to find an example that shows how to deal with real-time apps that are scaled and are running with multiple instances. You will need to deal with issues like sticky sessions, scale-up/down, instance crash/restart, and more for apps that will scale. This post will show you how to manage these scaling requirements.
 
 ***
-## Chat App ##
+## Chat App
 The main objective of this project is to build a simple chat app and focus on tackling such issues. Specifically, we will be building a simple Express, Socket.io and Redis-based Chat app that should meet the following objectives:
 
 1. Chat server should run with multiple instances.
@@ -358,10 +358,9 @@ exports.index = function (req, res) {
     });
 };
 
-
 </pre>
 
-**
+***
 ## Running / Testing it on Cloud Foundry ##
 
 * Clone the app to `redispubsub` folder

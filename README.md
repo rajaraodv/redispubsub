@@ -6,7 +6,7 @@
 
 One of the most common things people build on Node.js are real-time apps like chat apps, social-networking apps etc. There are plenty of examples showing how to build such apps on the web, but it’s hard to find an example that shows how to deal with real-time apps that are scaled and are running with multiple instances. You will need to deal with issues like sticky sessions, scale-up/down, instance crash/restart, and more for apps that will scale. This post will show you how to manage these scaling requirements.
 
-## Chat App ## 
+## Chat App
 The main objective of this project is to build a simple chat app and focus on tackling such issues. Specifically, we will be building a simple Express, Socket.io and Redis-based Chat app that should meet the following objectives:
 
 1. Chat server should run with multiple instances.
@@ -92,11 +92,11 @@ Let's imagine that the user is logging in via Twitter or Facebook, or we impleme
 
 ```javascript
 
-app.post('/login', function(req, res) {
-   //store user info in session after login.
-  req.session.user = req.body.user;
-  ...
-  ...
+app.post('/login', function (req, res) {
+    //store user info in session after login.
+    req.session.user = req.body.user;
+    ...
+    ...
 });
 ```
 
@@ -106,12 +106,12 @@ That's where the `sessions.sockets.io` library comes in. It's a very simple libr
 
 ```javascript
 //instead of
-io.sockets.on('connection', function(socket) {
- //do pubsub here
- ...
+io.sockets.on('connection', function (socket) {
+    //do pubsub here
+    ...
 })
 
-// with sessions.sockets.io, you'll get session info
+//But with sessions.sockets.io, you'll get session info
 
 /*
  Use SessionSockets so that we can exchange (set/get) user data b/w sockets and http sessions
@@ -122,16 +122,16 @@ var sessionSockets = new SessionSockets(io, sessionStore, cookieParser, 'jsessio
 
 sessionSockets.on('connection', function (err, socket, session) {
 
-  //get info from session
-  var user = session.user;
-  
-  //Close socket if user is not logged in
-  if(!user) 
-  	socket.close(); 
-   
-  //do pubsub
-  socket.emit('chat', {user: user, msg: 'logged in'});
-  ...
+    //get info from session
+    var user = session.user;
+
+    //Close socket if user is not logged in
+    if (!user)
+        socket.close();
+
+    //do pubsub
+    socket.emit('chat', {user: user, msg: 'logged in'});
+    ...
 });
 ```
 
@@ -161,7 +161,7 @@ var sessionStore = new RedisStore({client:rClient});
   //And pass sessionStore to Express's 'session' middleware's 'store' value.
      ...
      ...  
-    app.use(express.session({store:sessionStore, key:'jsessionid', secret:'your secret here'})); 
+app.use(express.session({store: sessionStore, key: 'jsessionid', secret: 'your secret here'}));
      ...
 
 ```
@@ -179,15 +179,15 @@ i.e. if user1 and user2 are on server instance #1, they can both chat with each 
 
 ```javascript
 sessionSockets.on('connection', function (err, socket, session) {
-   socket.on('chat', function(data){
+    socket.on('chat', function (data) {
         socket.emit('chat', data); //send back to browser
         socket.broadcast.emit('chat', data); // send to others
-   });
+    });
 
-   socket.on('join', function(data){
+    socket.on('join', function (data) {
         socket.emit('chat', {msg: 'user joined'});
         socket.broadcast.emit('chat', {msg: 'user joined'});
-  });
+    });
 }
 ```
 
@@ -208,18 +208,18 @@ sub.subscribe('chat');
 
 
 sessionSockets.on('connection', function (err, socket, session) {
-   socket.on('chat', function(data){
+    socket.on('chat', function (data) {
         pub.publish('chat', data);
    });
 
-   socket.on('join', function(data){
+    socket.on('join', function (data) {
         pub.publish('chat', {msg: 'user joined'});
-  });
-  
-   /*
+    });
+
+    /*
      Use Redis' 'sub' (subscriber) client to listen to any message from Redis to server.
      When a message arrives, send it back to browser using socket.io
-   */
+     */
     sub.on('message', function (channel, message) {
         socket.emit(channel, message);
     });
@@ -243,36 +243,36 @@ Let's first understand what happens in that situation.
 The code below simply connects a browser to server and listens to various socket.io events.
 
 ```javascript
-        /*
-         Connect to socket.io on the server (***BEFORE FIX***).
-         */
-        var host = window.location.host.split(':')[0];
-        var socket = io.connect('http://' + host);
+ /*
+  Connect to socket.io on the server (***BEFORE FIX***).
+  */
+ var host = window.location.host.split(':')[0];
+ var socket = io.connect('http://' + host);
 
-        socket.on('connect', function () {
-            console.log('connected');
-        });
-        socket.on('connecting', function () {
-            console.log('connecting');
-        });
-        socket.on('disconnect', function () {
-            console.log('disconnect');
-        });
-        socket.on('connect_failed', function () {
-            console.log('connect_failed');
-        });
-        socket.on('error', function (err) {
-            console.log('error: ' + err);
-        });
-        socket.on('reconnect_failed', function () {
-            console.log('reconnect_failed');
-        });
-        socket.on('reconnect', function () {
-            console.log('reconnected ');
-        });
-        socket.on('reconnecting', function () {
-            console.log('reconnecting');
-        });
+ socket.on('connect', function () {
+     console.log('connected');
+ });
+ socket.on('connecting', function () {
+     console.log('connecting');
+ });
+ socket.on('disconnect', function () {
+     console.log('disconnect');
+ });
+ socket.on('connect_failed', function () {
+     console.log('connect_failed');
+ });
+ socket.on('error', function (err) {
+     console.log('error: ' + err);
+ });
+ socket.on('reconnect_failed', function () {
+     console.log('reconnect_failed');
+ });
+ socket.on('reconnect', function () {
+     console.log('reconnected ');
+ });
+ socket.on('reconnecting', function () {
+     console.log('reconnecting');
+ });
 ```
 
 While the user is chatting, if we restart the app **on localhost or on a single host**, socket.io attempts to reconnect multiple times (based on configuration) to see if it can connect. If the server comes up with in that time, it will reconnect. So we see the below logs:
@@ -298,50 +298,50 @@ In our custom reconnection function, when the server goes down, we'll make a dum
 	      
 ```javascript
 
-    /*
-      Connect to socket.io on the server (*** FIX ***).
-    */
- 	var host = window.location.host.split(':')[0];
- 	
- 		//Disable Socket.io's default "reconnect" feature
-        var socket = io.connect('http://' + host, {reconnect:false, 'try multiple transports':false});
-        var intervalID;
-        var reconnectCount = 0;
-		...
-		...
-        socket.on('disconnect', function () {
-            console.log('disconnect');
-            
-            //Retry reconnecting every 4 seconds
-            intervalID = setInterval(tryReconnect, 4000);
-        });
-       ...
-       ...
-      
-        
+/*
+ Connect to socket.io on the server (*** FIX ***).
+ */
+var host = window.location.host.split(':')[0];
 
-	    /*
-	      Implement our own reconnection feature. 
-	      When the server goes down we make a dummy HTTP-get call to index.html every 4-5 seconds.
-	      If the call succeeds, we know that (Express) server sets ***jsessionid*** , so only then we try socket.io reconnect.
-	    */
-        var tryReconnect = function () {
-            ++reconnectCount;
-            if (reconnectCount == 5) {
-                clearInterval(intervalID);
-            }
-            console.log('Making a dummy http call to set jsessionid (before we do socket.io reconnect)');
-            $.ajax('/')
-                .success(function () {
-                    console.log("http request succeeded");
-                    //reconnect the socket AFTER we got jsessionid set
-                    socket.socket.reconnect();
-                    clearInterval(intervalID);
-                }).error(function (err) {
-                    console.log("http request failed (probably server not up yet)");
-                });
-        };
-        
+//Disable Socket.io's default "reconnect" feature
+var socket = io.connect('http://' + host, {reconnect: false, 'try multiple transports': false});
+var intervalID;
+var reconnectCount = 0;
+...
+...
+socket.on('disconnect', function () {
+    console.log('disconnect');
+
+    //Retry reconnecting every 4 seconds
+    intervalID = setInterval(tryReconnect, 4000);
+});
+...
+...
+
+
+
+/*
+ Implement our own reconnection feature.
+ When the server goes down we make a dummy HTTP-get call to index.html every 4-5 seconds.
+ If the call succeeds, we know that (Express) server sets ***jsessionid*** , so only then we try socket.io reconnect.
+ */
+var tryReconnect = function () {
+    ++reconnectCount;
+    if (reconnectCount == 5) {
+        clearInterval(intervalID);
+    }
+    console.log('Making a dummy http call to set jsessionid (before we do socket.io reconnect)');
+    $.ajax('/')
+        .success(function () {
+            console.log("http request succeeded");
+            //reconnect the socket AFTER we got jsessionid set
+            socket.socket.reconnect();
+            clearInterval(intervalID);
+        }).error(function (err) {
+            console.log("http request failed (probably server not up yet)");
+        });
+};
+
 ```
 
 
@@ -350,7 +350,7 @@ In addition, since the jsessionid is invalidated by the load balancer, we can't 
 ```javascript
 //Instead of..
 exports.index = function (req, res) {
-    res.render('index', { title:'RedisPubSubApp',  user:req.session.user});
+    res.render('index', { title: 'RedisPubSubApp', user: req.session.user});
 };
 
 //Use this..
@@ -361,7 +361,7 @@ exports.index = function (req, res) {
     //Regenerate new session & store user from previous session (if it exists)
     req.session.regenerate(function (err) {
         req.session.user = user;
-        res.render('index', { title:'RedisPubSubApp',  user:req.session.user});
+        res.render('index', { title: 'RedisPubSubApp', user: req.session.user});
     });
 };
 
@@ -451,7 +451,7 @@ Checking redispubsub... OK
 
 ## General Notes ####
 * Github location: <a href='https://github.com/rajaraodv/redispubsub' target='_blank'>https://github.com/rajaraodv/redispubsub</a>
-* If you don't have a Cloud Foundry account, sign up for it <a href='https://my.cloudfoundry.com/signup' target='_blank'>here</a>  
+* If you don't have a Cloud Foundry account, sign up for it <a href='https://my.cloudfoundry.com/signup' target='_blank'>here</a>
 * Check out Cloud Foundry getting started <a href='http://docs.cloudfoundry.com/getting-started.html' target='_blank'>here</a> and install the `vmc` Ruby command line tool to push apps.
 
 * To install the ***latest alpha or beta*** `vmc` tool run: `sudo gem install vmc --pre`
