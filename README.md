@@ -1,19 +1,19 @@
 
 
 #Scaling real-time apps on Cloud Foundry (using Redis)#
-<br>
+
 
 ## Chat App ##
-One of the most common things people build on Node.js are real-time apps like chat apps, social-networking apps etc. And there are plenty of examples showing how to build such apps on the web. But it's hard to find an example that shows how to deal with real-time apps that are scaled & are running in the cloud/PaaS with multiple instances & deal with issues like app sessions, sticky sessions, scale-up/down, instance crash/restart etc in such an environment.
+Some of the most common things people build using Node.js are real-time apps like chat apps, social networking apps etc. There are plenty of examples showing how to build such apps on the web. It's less common to find an example that shows how to deal with real-time apps that can  scale to run in the cloud, for instance on a PaaS with multiple instances - and how deal with issues like app sessions, sticky sessions, scale-up/down, instance crash/restart, etc in such an environment.
  
-The main objective of this project is to build a simple chat app and focus on tackling such issues. Specifically, we will be building a simple Express, Socket.io & Redis based Chat app that should meet the following objectives:
+The main objective of this project is to build a simple chat app and focus on tackling such issues. Specifically, we will be building a simple Express, Socket.io and Redis-based Chat app that should meet the following objectives:
 
-1. Chat server should run on multiple instance.
-2. User's login should be saved in a session.
-    * If the user refreshes the browser, he should be relogged in.
-    * Socket.io should get user info from the session before sending chat-message 
-   * Socket.io should only connect if user is already logged in.
-3. While the user is chatting, if the server to which he is connected is restarted / scaled-down, the user should be reconnected to available instance w/o bouncing him. 
+1. Chat server should run with multiple instances.
+2. The user login should be saved in a session.
+    * If the user refreshes the browser, he should be logged back in.
+    * Socket.io should get user info from the session before sending chat messages. 
+    * Socket.io should only connect if user is already logged in.
+3. While the user is chatting, if the server to which he is connected is restarted / scaled-down, the user should be reconnected to an available instance without being bounced out. 
 
 ***Chat app's Login page:***
 
@@ -27,49 +27,43 @@ The main objective of this project is to build a simple chat app and focus on ta
 </p>
 
 <br>
-***Along the way, we will go over:***
+***Along the way, we will cover:***
 
 1. How to use Socket.io & Sticky Sessions.
-2. How to use Redis as session store 
+2. How to use Redis as a session store 
 3. How to use Redis as a pubsub service.
 4. How to use sessions.sockets.io to get session info (like user info) from Express sessions.
-5. How to configure Socket.io client & server to properly reconnect after one or more server instances goes down ( i.e. has been restarted / scaled down / has crashed).
+5. How to configure Socket.io client and server to properly reconnect after one or more server instances goes down ( i.e. has been restarted / scaled down / has crashed).
 
 
 
 ## Socket.io & Sticky Sessions ##
 
-<a href='http://socket.io/' target='_blank'>Socket.io</a> is one of the earliest & most popular Node.js modules to help build real-time apps like chat, social networking etc. in Node.js.  (PS: <a href='https://github.com/sockjs/sockjs-client' target='_blank'>SockJS</a> is another popular library similar to Socket.io).
+<a href='http://socket.io/' target='_blank'>Socket.io</a> is one of the earliest and most popular Node.js modules to help build real-time apps like chat, social networking etc. (note: <a href='https://github.com/sockjs/sockjs-client' target='_blank'>SockJS</a> is another popular library similar to Socket.io).
 
-But when you run such a server in the cloud that has load-balancer/ reverse proxy, routers etc, you need to configure it work properly especially when you scale the server to use multiple instances.
+When you run such a server in the cloud that has a load-balancer/reverse proxy, routers etc, you need to configure it to work properly, especially when you scale the server to use multiple instances.
 
-One of the constraints Socket.io and SockJS etc. have is that they need to continuously talk to the <i><b>same instance</b></i> of the server. They work perfectly fine when there is only 1 instance of the server.
+One of the constraints Socket.io, SockJS and similar libraries have is that they need to continuously talk to the ***same instance*** of the server. They work perfectly well when there is only 1 instance of the server.
 
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketio1Instance.png" height="300px" width="450px" />
 </p>
 
+When you scale your app in a cloud environment, the load balancer (Nginx in the case of Cloud Foundry) will take over, and the requests will be sent to different instances causing Socket.io to break.
 
-<br>
-<br>
-<br>
-But when you scale your app in a cloud environment, the load balancer (Nginx) will take over and starts to send the requests are sent to different instances causing Socket.io to break.
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketioBreaks.png" height="300px" width="450px" />
 </p>
 
-<br>
-<br>
-<br>
-To help in such situations, load balancers have feature called 'sticky sessions' aka 'session affinity'. The main idea is that if its set, then after the first request(load-balanced request), all the following requests will go to the same server instance.
+To help in such situations, load balancers have a feature called 'sticky sessions' aka 'session affinity'. The main idea is that if this property is set, then after the first load-balanced request, all the following requests will go to the same server instance.
 
-In Cloud Foundry, cookie based sticky sessions are enabled for apps that sets cookie <b>jsessionid</b>. 
+In Cloud Foundry, cookie-based sticky sessions are enabled for apps that set the cookie **jsessionid**. 
 
-PS: <b>jsessionid</b> is the cookie name commonly used for cookies that  track sessions in Java/Spring applications. Cloud Foundry is simply adapting that name as sticky session cookie name for all frameworks.
+Note: **jsessionid** is the cookie name commonly used to track sessions in Java/Spring applications. Cloud Foundry is simply adopting that as the sticky session cookie for all frameworks.
 
-So all the apps need to do is to set a cookie w/ name <b>jsessionid</b> to make Socket.io work.
+So, all the apps need to do is to set a cookie with the name **jsessionid** to make socket.io work.
 
-```
+```javascript
     /*
      Use cookieParser and session middlewares together.
      By default Express/Connect app creates a cookie by name 'connect.sid'.But to scale Socket.io app,
@@ -84,14 +78,16 @@ So all the apps need to do is to set a cookie w/ name <b>jsessionid</b> to make 
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketioWorks.png" height="300px" width="450px" />
 </p>
+
 In the above diagram, when you open the app, 
 
-1. Express sets a session cookie w/ cookie name <b>jsessionid</b>. 
-2. Then when socket.io connects, it uses that same cookie & hits load balancer
-3. Load balancer always routes it to the same server that the cookie was set in.
+1. Express sets a session cookie with name **jsessionid**. 
+2. When socket.io connects, it uses that same cookie and hits the load balancer
+3. The load balancer always routes it to the same server that the cookie was set in.
 
 ## Sending session info to Socket.io 
-Let's imagine that the user is logging in via Twitter or Facebook or we have regular login screen. And we are storing this information in a session after the user has logged in.
+
+Let's imagine that the user is logging in via Twitter or Facebook, or we implement a regular login screen. We are storing this information in a session after the user has logged in.
 
 ```javascript
 
@@ -103,9 +99,9 @@ app.post('/login', function(req, res) {
 });
 ```
 
-And once the user has logged in, we connect to Socket.io to allow chatting. But socket.io doesn't know who the user is & he is actually logged in before sending chat messages to others.
+Once the user has logged in, we connect to socket.io to allow chatting. However, socket.io doesn't know who the user is and whether he is actually logged in before sending chat messages to others.
 
-That's where `sessions.sockets.io` library comes in. It's a very simple  library that's a wrapper to socket.io. And all it does is to grab session information during handshake & gives it to Socket.io's `connection` function.
+That's where the `sessions.sockets.io` library comes in. It's a very simple library that's a wrapper to socket.io. All it does is grab session information during the handshake and then pass it to socket.io's `connection` function.
 
 ```javascript
 //instead of
@@ -145,11 +141,11 @@ sessionSockets.on('connection', function (err, socket, session) {
 
 ## Redis as a session store
 
-So far so good, but Express stores these sesssions in MemoryStore (bydefault). MemoryStore is simply a JS object & will be in memory as long as the server is up.  But, if the server goes down all the session information of all users will be lost. 
+So far so good... but Express stores these sessions in MemoryStore (by default). MemoryStore is simply a Javascript object - it will be in memory as long as the server is up. If the server goes down, all the session information of all users will be lost! 
 
-So we need a place to store this outside of our server, but should also be very fast to retrieve. That's where Redis as session store come in.
+We need a place to store this outside of our server, but it should also be very fast to retrieve. That's where Redis as a session store come in.
 
-Let's configure our app to use Redis as session store like below.
+Let's configure our app to use Redis as a session store as below.
 
 ```javascript
 /*
@@ -173,13 +169,12 @@ var sessionStore = new RedisStore({client:rClient});
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/redisAsSessionStore.png" height="300px" width="450px" />
 </p>
 
+With the above configuration, sessions will now be stored in Redis. Also, if one of the server instances goes down, the session will still be available for other instances to pick up.
 
-With the above configuration, sessions will now be stored in Redis. And also, if one of the server instances goes down, session will still be available for other instances to pick up.
-
-<br>
 ##Socket.io as pub-sub server
-So far with the above setup our sessions are taken care of but if we are using Socket.io's default pub-sub, it will work only for 1 sever instance.
-i.e. if user1 & user2 are on server instance #1, they both can chat with each other. But if they are on different server instances they can't.
+
+So far with the above setup our sessions are taken care of - but if we are using socket.io's default pub-sub mechanism, it will work only for 1 sever instance.
+i.e. if user1 and user2 are on server instance #1, they can both chat with each other. If they are on different server instances they cannot do so.
 
 ```javascript
 sessionSockets.on('connection', function (err, socket, session) {
@@ -193,14 +188,11 @@ sessionSockets.on('connection', function (err, socket, session) {
         socket.broadcast.emit('chat', {msg: 'user joined'});
   });
 }
+```
 
+## Redis as a PubSub service
 
-<br>
-##Redis as pub-sub server
-
-
-So to send chat messages to users across servers we will update our server to use Redis as PubSub service (along with session-store). PS: Redis natively supports pub-sub operations. All we need to do is to create a publisher, a subscriber & a channel and we will be good. 
-
+In order to send chat messages to users across servers we will update our server to use Redis as a PubSub service (along with session store). Redis *natively supports pub-sub operations*. All we need to do is to create a publisher, a subscriber and a channel and we will be good. 
 
 ```javascript
 //We will use Redis to do pub-sub
@@ -234,24 +226,23 @@ sessionSockets.on('connection', function (err, socket, session) {
 
 ```
 
+The app's architecture will now look like this:
 
-So the app's architecture will now look like this:
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/redisAsSSAndPS.png" height="300px" width="500px" />
 </p>
 
-    
-<br>
-<br>
-## Handling server scale-down /crashing / restarting
-Our app will work fine as long as all the server instances are running. But what happens if the server is restarted or scaled down or one of the instances crash? How do we handle that?
 
-But let's first understand what happens in that situation.
+## Handling server scale-down / crashes / restarts
 
-The code below simply connects a browser to server and listens to various Socket.io's events.
+Our app will work fine as long as all the server instances are running.  What happens if the server is restarted or scaled down or one of the instances crash? How do we handle that?
+
+Let's first understand what happens in that situation.
+
+The code below simply connects a browser to server and listens to various socket.io events.
 
 ```javascript
-    /*
+        /*
          Connect to socket.io on the server (***BEFORE FIX***).
          */
         var host = window.location.host.split(':')[0];
@@ -281,36 +272,28 @@ The code below simply connects a browser to server and listens to various Socket
         socket.on('reconnecting', function () {
             console.log('reconnecting');
         });
-
-
 ```
-<br>
-<br>
-While the user is chatting, if we restart the app **on localhost or single host**, Socket.io attempts to reconnect multiple times (configuration) to see if it can connect. If the server comes up w/in that time, it will reconnect. So we see the below logs:
+
+While the user is chatting, if we restart the app **on localhost or on a single host**, socket.io attempts to reconnect multiple times (based on configuration) to see if it can connect. If the server comes up within that time, it will reconnect. So we see the below logs:
 
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/reconnectOn1server.png" height="300px" width="600px" />
 </p>
 
-<br>
-But, if the user is chatting on the same app that's running ***on Cloud Foundry AND with multiple instances***, and if we restart the server (say using `vmc restart redispubsub`)
-then we'll see the following log:
+If the user is chatting on the same app that's running ***on Cloud Foundry AND with multiple instances***, and if we restart the server (say using `vmc restart redispubsub`) then we'll see the following log:
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/reconnectOnMultiServer.png" height="400px" width="600px" />
 </p>
 
-You can see that in the above logs, after the server comes back up, Socket.io -client(that's running in the browser) isn't able to connect to Socket.io-server(that's running in the server). 
+You can see that in the above logs, after the server comes back up, socket.io client (running in the browser) isn't able to connect to socket.io server (running on Node.js in the server). 
 
-That is because, once the server is restarted on Cloud Foundry, ***instances are brought up as if they are brand-new server instances w/ different IP addresses and different ports and so `jsessionid` in no-longer valid***  
-And that in-turn causes load balander to *load balance* Socket.io's reconnection requests (i.e. they are sent to different server instances) causing socket.io-server piece not to properly handshake and consequently to throw `client not handshaken` error!
+This is because, once the server is restarted on Cloud Foundry, ***instances are brought up as if they are brand-new server instances with different IP addresses and different ports and so `jsessionid` is no-longer valid***. That in turn causes the load balancer to *load balance* socket.io's reconnection requests (i.e. they are sent to different server instances) causing the socket.io server not to properly handshake and consequently to throw `client not handshaken` errors!
 
-<br>
-###OK, let's fix that reconnection issue.
+### OK, let's fix that reconnection issue
 
-First, we will disable Socket.io's default "reconnect" feature. And then implement our own reconnection feature. 
+First, we will disable socket.io's default "reconnect" feature, and then implement our own reconnection feature. 
 
-In our custom reconnection function, when the server goes down, we'll make a dummy HTTP-get call to index.html every 4-5 seconds.
-	      And if the call succeeds, we know that (Express) server has already set ***jsessionid*** in the response. So then we'll call socket.io's reconnect function. And this time because jsessionid is set, socket.io's handshake will succeed and the user will get to continue chatting happily.
+In our custom reconnection function, when the server goes down, we'll make a dummy HTTP-get call to index.html every 4-5 seconds. If the call succeeds, we know that the (Express) server has already set ***jsessionid*** in the response. So, then we'll call socket.io's reconnect function. This time because jsessionid is set, socket.io's handshake will succeed and the user will get to continue chatting happily.
 	      
 ```javascript
 
@@ -361,7 +344,7 @@ In our custom reconnection function, when the server goes down, we'll make a dum
 ```
 
 
-In addition, since the jsessionid is invalidated by Nginx, we can't create session with the same jsessionid or else sticky-session will be ignored by Nginx.  So on the server, when the dummy-http request comes in, we will ***regenerate*** session to remove old session & sessionid and ensure everything is afresh before we serve the response.
+In addition, since the jsessionid is invalidated by Nginx, we can't create a session with the same jsessionid or else the sticky session will be ignored by Nginx. So on the server, when the dummy HTTP request comes in, we will ***regenerate*** the session to remove the old session and sessionid and ensure everything is afresh before we serve the response.
 
 ```javascript
 //Instead of..
@@ -385,9 +368,10 @@ exports.index = function (req, res) {
 ```
 
 ## Running / Testing it on Cloud Foundry ##
-* Clone this app to `redispubsub` folder
-* ` cd redispubsub`
-* `npm install` & follow the below instructions to push the app to Cloud Foundry
+
+* Clone the app to `redispubsub` folder
+* `cd redispubsub`
+* `npm install` and follow the below instructions to push the app to Cloud Foundry
 
 ```
 
@@ -446,7 +430,8 @@ Starting redispubsub... OK
 Checking redispubsub... OK
 
 ```
-* Once the server is up,o open up multiple browsers and go do `<servername>.cloudfoundry.com`
+
+* Once the server is up, open up multiple browsers and go to `<servername>.cloudfoundry.com`
 * Start chatting.
 
 #### Test 1 ####
@@ -457,21 +442,20 @@ Checking redispubsub... OK
 
 #### Test 2 ####
 
-* Open up JS debugger (On Chrome, do `cmd + alt +j` )
-* Restart the server by doing `vmc restart <appname>`
+* Open up JS debugger (in Chrome, do `cmd + alt +j` )
+* Restart the server by running `vmc restart <appname>`
 * Once the server restarts, Socket.io should automatically reconnect
 * You should be able to chat after the reconnection.
 
 
-
 ## General Notes ####
-* App's Github location: <a href='https://github.com/rajaraodv/redispubsub' target='_blank'>https://github.com/rajaraodv/redispubsub</a>
+* Github location: <a href='https://github.com/rajaraodv/redispubsub' target='_blank'>https://github.com/rajaraodv/redispubsub</a>
 * If you don't have a Cloud Foundry account, sign up for it <a href='https://my.cloudfoundry.com/signup' target='_blank'>here</a>  
-* Check out Cloud Foundry getting started <a href='http://docs.cloudfoundry.com/getting-started.html' target='_blank'>here</a> & install `vmc` Ruby command line tool to push apps.
+* Check out Cloud Foundry getting started <a href='http://docs.cloudfoundry.com/getting-started.html' target='_blank'>here</a> and install the `vmc` Ruby command line tool to push apps.
 
-* To install ***latest alpha or beta*** `vmc` tool run: `sudo gem install vmc --pre`
+* To install the ***latest alpha or beta*** `vmc` tool run: `sudo gem install vmc --pre`
 
 
 ####Credits####
-<p>
-PS: Front end UI: <a href="https://github.com/steffenwt/nodejs-pub-sub-chat-demo">https://github.com/steffenwt/nodejs-pub-sub-chat-demo</a></p>
+
+Front end UI: <a href="https://github.com/steffenwt/nodejs-pub-sub-chat-demo">https://github.com/steffenwt/nodejs-pub-sub-chat-demo</a></p>
