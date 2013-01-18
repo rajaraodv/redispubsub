@@ -1,10 +1,10 @@
 
 
-#Scaling real-time apps on Cloud Foundry (using Redis)#
+# Scaling real-time apps on Cloud Foundry (using Redis)
 
 
 
-One of the most common things people build on Node.js are real-time apps like chat apps, social-networking apps etc. There are plenty of examples showing how to build such apps on the web, but it’s hard to find an example that shows how to deal with real-time apps that are scaled and are running with multiple instances. You will need to deal with issues like sticky sessions, scale-up/down, instance crash/restart, and more for apps that will scale. This post will show you how to manage these scaling requirements.
+One of the most common things people build on Node.js are real-time apps like chat apps, social networking apps etc. There are plenty of examples showing how to build such apps on the web, but it’s hard to find an example that shows how to deal with real-time apps that are scaled and are running with multiple instances. You will need to deal with issues like sticky sessions, scale-up/down, instance crash/restart, and more for apps that will scale. This post will show you how to manage these scaling requirements.
 
 ## Chat App
 The main objective of this project is to build a simple chat app and focus on tackling such issues. Specifically, we will be building a simple Express, Socket.io and Redis-based Chat app that should meet the following objectives:
@@ -27,22 +27,21 @@ The main objective of this project is to build a simple chat app and focus on ta
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/chatAppPage2.png" height="" width="450px" />
 </p>
 
-<br>
 ***Along the way, we will cover:***
 
-1. How to use Socket.io & Sticky Sessions
+1. How to use Socket.io and Sticky Sessions
 2. How to use Redis as a session store 
 3. How to use Redis as a pubsub service
 4. How to use sessions.sockets.io to get session info (like user info) from Express sessions
-5. How to configure Socket.io client and server to properly reconnect after one or more server instances goes down ( i.e. has been restarted / scaled down / has crashed)
+5. How to configure Socket.io client and server to properly reconnect after one or more server instances goes down (i.e. has been restarted / scaled down / has crashed)
 
 
 
-## Socket.io & Sticky Sessions ##
+## Socket.io and Sticky Sessions ##
 
 <a href='http://socket.io/' target='_blank'>Socket.io</a> is one of the earliest and most popular Node.js modules to help build real-time apps like chat, social networking etc. (note: <a href='https://github.com/sockjs/sockjs-client' target='_blank'>SockJS</a> is another popular library similar to Socket.io).
 
-When you run such a server in the cloud that has a load-balancer/reverse proxy, routers etc, you need to configure it to work properly, especially when you scale the server to use multiple instances.
+When you run such a server in a cloud that has a load-balancer/reverse proxy, routers etc, you need to configure it to work properly, especially when you scale the server to use multiple instances.
 
 One of the constraints Socket.io, SockJS and similar libraries have is that they need to continuously talk to the ***same instance*** of the server. They work perfectly well when there is only 1 instance of the server.
 
@@ -50,7 +49,7 @@ One of the constraints Socket.io, SockJS and similar libraries have is that they
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketio1Instance.png" height="300px" width="450px" />
 </p>
 
-When you scale your app in a cloud environment, the load balancer will take over and starts to send the requests are sent to different instances causing Socket.io to break.
+When you scale your app in a cloud environment, the load balancer (Nginx in the case of Cloud Foundry) will take over, and the requests will be sent to different instances causing Socket.io to break.
 
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketioBreaks.png" height="300px" width="450px" />
@@ -100,9 +99,9 @@ app.post('/login', function (req, res) {
 });
 ```
 
-Once the user has logged in, we connect to socket.io to allow chatting. However, socket.io doesn't know who the user is and whether he is actually logged in before sending chat messages to others.
+Once the user has logged in, we connect via socket.io to allow chatting. However, socket.io doesn't know who the user is and whether he is actually logged in before sending chat messages to others.
 
-That's where the `sessions.sockets.io` library comes in. It's a very simple library that's a wrapper to socket.io. All it does is grab session information during the handshake and then pass it to socket.io's `connection` function.
+That's where the `sessions.sockets.io` library comes in. It's a very simple library that's a wrapper around socket.io. All it does is grab session information during the handshake and then pass it to socket.io's `connection` function.
 
 ```javascript
 //instead of
@@ -172,7 +171,7 @@ app.use(express.session({store: sessionStore, key: 'jsessionid', secret: 'your s
 
 With the above configuration, sessions will now be stored in Redis. Also, if one of the server instances goes down, the session will still be available for other instances to pick up.
 
-##Socket.io as pub-sub server
+## Socket.io as pub-sub server
 
 So far with the above setup our sessions are taken care of - but if we are using socket.io's default pub-sub mechanism, it will work only for 1 sever instance.
 i.e. if user1 and user2 are on server instance #1, they can both chat with each other. If they are on different server instances they cannot do so.
@@ -281,7 +280,7 @@ While the user is chatting, if we restart the app **on localhost or on a single 
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/reconnectOn1server.png" height="300px" width="600px" />
 </p>
 
-If the user is chatting on the same app that's running ***on Cloud Foundry AND with multiple instances***, and if we restart the server (say using `vmc restart redispubsub`) then we'll see the following log:
+If the user is chatting on the same app that's running ***on Cloud Foundry AND with multiple instances***, and if we restart the server (say using `vmc restart redispubsub`) then we'll see the following log messages:
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/reconnectOnMultiServer.png" height="400px" width="600px" />
 </p>
@@ -294,7 +293,7 @@ This is because, once the server is restarted on Cloud Foundry, ***instances are
 
 First, we will disable socket.io's default "reconnect" feature, and then implement our own reconnection feature. 
 
-In our custom reconnection function, when the server goes down, we'll make a dummy HTTP-get call to index.html every 4-5 seconds. If the call succeeds, we know that the (Express) server has already set ***jsessionid*** in the response. So, then we'll call socket.io's reconnect function. This time because jsessionid is set, socket.io's handshake will succeed and the user will get to continue chatting happily.
+In our custom reconnection function, when the server goes down, we'll make a dummy HTTP GET call to index.html every 4-5 seconds. If the call succeeds, we know that the (Express) server has already set ***jsessionid*** in the response. So, then we'll call socket.io's reconnect function. This time because jsessionid is set, socket.io's handshake will succeed and the user will get to continue chatting happily.
 	      
 ```javascript
 
@@ -344,8 +343,7 @@ var tryReconnect = function () {
 
 ```
 
-
-In addition, since the jsessionid is invalidated by the load balancer, we can't create a session with the same jsessionid or else the sticky session will be ignored by the load balancer. So on the server, when the dummy HTTP request comes in, we will ***regenerate*** the session to remove the old session and sessionid and ensure everything is afresh before we serve the response.
+In addition, since the jsessionid is invalidated by the load balancer, we can't create a session with the same jsessionid or else the sticky session will be ignored by the load balancer. So on the server, when the dummy HTTP request comes in, we will ***regenerate*** the session to remove the old session and sessionid and ensure everything is fresh before we serve the response.
 
 ```javascript
 //Instead of..
@@ -368,7 +366,7 @@ exports.index = function (req, res) {
 
 ```
 
-## Running / Testing it on Cloud Foundry ##
+## Running / Testing it on Cloud Foundry
 
 * Clone the app to `redispubsub` folder
 * `cd redispubsub`
@@ -414,9 +412,9 @@ Create services for application?> y
 6: redis 2.6
 7: redis 2.4
 8: redis 2.2
-What kind?> 6 <----- Select & Add Redis 2.6v service
+What kind?> 6 <----- Select & Add Redis v2.6 service
 
-Name?> redis-e9771 <-- This is just random name for Redis service
+Name?> redis-e9771 <-- This is just a random name for Redis service
 
 Creating service redis-e9771... OK
 Binding redis-e9771 to redispubsub... OK
@@ -433,23 +431,23 @@ Checking redispubsub... OK
 ```
 
 * Once the server is up, open up multiple browsers and go to `<appname>.cloudfoundry.com`
-* Start chatting.
+* Start chatting
 
-#### Test 1 ####
+#### Test 1
 
-* Refresh the browser.
-* You should automatically be logged in.
+* Refresh the browser
+* You should automatically be logged in
 
 
-#### Test 2 ####
+#### Test 2
 
-* Open up JS debugger (in Chrome, do `cmd + alt +j` )
+* Open up JS debugger (in Chrome, do `cmd + alt +j`)
 * Restart the server by running `vmc restart <appname>`
 * Once the server restarts, Socket.io should automatically reconnect
-* You should be able to chat after the reconnection.
+* You should be able to chat after the reconnection
 
 
-## General Notes ####
+## General Notes
 * Github location: <a href='https://github.com/rajaraodv/redispubsub' target='_blank'>https://github.com/rajaraodv/redispubsub</a>
 * If you don't have a Cloud Foundry account, sign up for it <a href='https://my.cloudfoundry.com/signup' target='_blank'>here</a>
 * Check out Cloud Foundry getting started <a href='http://docs.cloudfoundry.com/getting-started.html' target='_blank'>here</a> and install the `vmc` Ruby command line tool to push apps.
@@ -457,6 +455,6 @@ Checking redispubsub... OK
 * To install the ***latest alpha or beta*** `vmc` tool run: `sudo gem install vmc --pre`
 
 
-####Credits####
+#### Credits
 
 Front end UI: <a href="https://github.com/steffenwt/nodejs-pub-sub-chat-demo">https://github.com/steffenwt/nodejs-pub-sub-chat-demo</a></p>
