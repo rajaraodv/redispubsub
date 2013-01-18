@@ -289,7 +289,7 @@ You can see that in the above logs, after the server comes back up, socket.io cl
 
 This is because, once the server is restarted on Cloud Foundry, ***instances are brought up as if they are brand-new server instances with different IP addresses and different ports and so `jsessionid` is no-longer valid***. That in turn causes the load balancer to *load balance* socket.io's reconnection requests (i.e. they are sent to different server instances) causing the socket.io server not to properly handshake and consequently to throw `client not handshaken` errors!
 
-### OK, let's fix that reconnection issue.
+### OK, let's fix that reconnection issue
 
 First, we will disable socket.io's default "reconnect" feature, and then implement our own reconnection feature. 
 
@@ -371,7 +371,7 @@ exports.index = function (req, res) {
 
 * Clone the app to `redispubsub` folder
 * `cd redispubsub`
-* `npm install` & follow the below instructions to push the app to Cloud Foundry
+* `npm install` and follow the below instructions to push the app to Cloud Foundry
 
 ```
 
