@@ -3,9 +3,10 @@
 #Scaling real-time apps on Cloud Foundry (using Redis)#
 
 
-## Chat App ##
-Some of the most common things people build using Node.js are real-time apps like chat apps, social networking apps etc. There are plenty of examples showing how to build such apps on the web. It's less common to find an example that shows how to deal with real-time apps that can  scale to run in the cloud, for instance on a PaaS with multiple instances - and how deal with issues like app sessions, sticky sessions, scale-up/down, instance crash/restart, etc in such an environment.
- 
+
+One of the most common things people build on Node.js are real-time apps like chat apps, social-networking apps etc. There are plenty of examples showing how to build such apps on the web, but it’s hard to find an example that shows how to deal with real-time apps that are scaled and are running with multiple instances. You will need to deal with issues like sticky sessions, scale-up/down, instance crash/restart, and more for apps that will scale. This post will show you how to manage these scaling requirements.
+
+## Chat App ## 
 The main objective of this project is to build a simple chat app and focus on tackling such issues. Specifically, we will be building a simple Express, Socket.io and Redis-based Chat app that should meet the following objectives:
 
 1. Chat server should run with multiple instances.
@@ -13,7 +14,7 @@ The main objective of this project is to build a simple chat app and focus on ta
     * If the user refreshes the browser, he should be logged back in.
     * Socket.io should get user info from the session before sending chat messages. 
     * Socket.io should only connect if user is already logged in.
-3. While the user is chatting, if the server to which he is connected is restarted / scaled-down, the user should be reconnected to an available instance without being bounced out. 
+3. Reconnect: While the user is chatting, if the server-instance to which he is connected goes down / is restarted / scaled-down, the user should be reconnected to an available instance and recover the session.
 
 ***Chat app's Login page:***
 
@@ -29,11 +30,11 @@ The main objective of this project is to build a simple chat app and focus on ta
 <br>
 ***Along the way, we will cover:***
 
-1. How to use Socket.io & Sticky Sessions.
+1. How to use Socket.io & Sticky Sessions
 2. How to use Redis as a session store 
-3. How to use Redis as a pubsub service.
-4. How to use sessions.sockets.io to get session info (like user info) from Express sessions.
-5. How to configure Socket.io client and server to properly reconnect after one or more server instances goes down ( i.e. has been restarted / scaled down / has crashed).
+3. How to use Redis as a pubsub service
+4. How to use sessions.sockets.io to get session info (like user info) from Express sessions
+5. How to configure Socket.io client and server to properly reconnect after one or more server instances goes down ( i.e. has been restarted / scaled down / has crashed)
 
 
 
@@ -49,7 +50,7 @@ One of the constraints Socket.io, SockJS and similar libraries have is that they
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketio1Instance.png" height="300px" width="450px" />
 </p>
 
-When you scale your app in a cloud environment, the load balancer (Nginx in the case of Cloud Foundry) will take over, and the requests will be sent to different instances causing Socket.io to break.
+When you scale your app in a cloud environment, the load balancer will take over and starts to send the requests are sent to different instances causing Socket.io to break.
 
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/socketioBreaks.png" height="300px" width="450px" />
@@ -274,7 +275,7 @@ The code below simply connects a browser to server and listens to various socket
         });
 ```
 
-While the user is chatting, if we restart the app **on localhost or on a single host**, socket.io attempts to reconnect multiple times (based on configuration) to see if it can connect. If the server comes up within that time, it will reconnect. So we see the below logs:
+While the user is chatting, if we restart the app **on localhost or on a single host**, socket.io attempts to reconnect multiple times (based on configuration) to see if it can connect. If the server comes up with in that time, it will reconnect. So we see the below logs:
 
 <p align='center'>
 <img src="https://github.com/rajaraodv/redispubsub/raw/master/pics/reconnectOn1server.png" height="300px" width="600px" />
@@ -344,7 +345,7 @@ In our custom reconnection function, when the server goes down, we'll make a dum
 ```
 
 
-In addition, since the jsessionid is invalidated by Nginx, we can't create a session with the same jsessionid or else the sticky session will be ignored by Nginx. So on the server, when the dummy HTTP request comes in, we will ***regenerate*** the session to remove the old session and sessionid and ensure everything is afresh before we serve the response.
+In addition, since the jsessionid is invalidated by the load balancer, we can't create a session with the same jsessionid or else the sticky session will be ignored by the load balancer. So on the server, when the dummy HTTP request comes in, we will ***regenerate*** the session to remove the old session and sessionid and ensure everything is afresh before we serve the response.
 
 ```javascript
 //Instead of..
@@ -431,7 +432,7 @@ Checking redispubsub... OK
 
 ```
 
-* Once the server is up, open up multiple browsers and go to `<servername>.cloudfoundry.com`
+* Once the server is up, open up multiple browsers and go to `<appname>.cloudfoundry.com`
 * Start chatting.
 
 #### Test 1 ####
