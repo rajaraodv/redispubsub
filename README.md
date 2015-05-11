@@ -1,6 +1,9 @@
+# Note
 
+This project if forked from https://github.com/rajaraodv/redispubsub, and update express to version 4.12, socket.io to 1.3.5
+You can start app by type ```DEBUG=redispubsub node bin/www```
 
-# Scaling real-time apps on Cloud Foundry (using Redis)
+# Scaling real-time apps (using Redis)
 
 
 
