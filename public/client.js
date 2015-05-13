@@ -32,7 +32,7 @@ $(document).ready(function () {
         /*
          Connect to socket.io on the server.
          */
-        var host = window.location.host.split(':')[0];
+        var host = window.location.host//.split(':')[0];
         var socket = io.connect('http://' + host, {reconnect:false, 'try multiple transports':false});
         var intervalID;
         var reconnectCount = 0;
