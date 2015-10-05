@@ -29,10 +29,14 @@ var server = http.createServer(app);
 */
 var socketIO = require('socket.io');
 var io = socketIO(server);
-var SessionSocket = require('session.socket.io');
-var sessionSockets = new SessionSocket(io, app.sessionStore, app.cookieParser);
+
+var socketIOExpressSession = require('socket.io-express-session'); 
+io.use(socketIOExpressSession(app.session)); // session support
 var setEvents = require('../events');
-setEvents(sessionSockets);
+setEvents(io);
+//var SessionSocket = require('session.socket.io');
+//var sessionSockets = new SessionSocket(io, app.sessionStore, app.cookieParser);
+
 
 
 /**

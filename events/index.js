@@ -5,9 +5,7 @@ var pub = redis.createClient();
 sub.subscribe('chat');
 
 module.exports = function(io) {
-    io.on('connection', function(err, socket, session) {
-        if (!session.user) return;
-
+    io.on('connection', function(socket) {
         /*
          When the user sends a chat message, publish it to everyone (including myself) using
          Redis' 'pub' client we created earlier.
@@ -17,9 +15,10 @@ module.exports = function(io) {
             var msg = JSON.parse(data);
             var reply = JSON.stringify({
                 action: 'message',
-                user: session.user,
+                user: socket.handshake.session.user,
                 msg: msg.msg
             });
+            console.dir(reply);
             pub.publish('chat', reply);
         });
 
@@ -31,9 +30,10 @@ module.exports = function(io) {
         socket.on('join', function() {
             var reply = JSON.stringify({
                 action: 'control',
-                user: session.user,
+                user: socket.handshake.session.user,
                 msg: ' joined the channel'
             });
+             console.dir(reply);
             pub.publish('chat', reply);
         });
 

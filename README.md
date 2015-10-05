@@ -1,6 +1,7 @@
 # Note
 
-This project if forked from https://github.com/rajaraodv/redispubsub, and update express to version 4.12, socket.io to 1.3.5
+This project is now updated to use Node 4.x (not backward compatible). In addition, it uses all latest modules of Express, Socket.io etc. 
+
 You can start app by type ```DEBUG=redispubsub node bin/www```
 
 # Scaling real-time apps (using Redis)
@@ -104,7 +105,7 @@ app.post('/login', function (req, res) {
 
 Once the user has logged in, we connect via socket.io to allow chatting. However, socket.io doesn't know who the user is and whether he is actually logged in before sending chat messages to others.
 
-That's where the `sessions.sockets.io` library comes in. It's a very simple library that's a wrapper around socket.io. All it does is grab session information during the handshake and then pass it to socket.io's `connection` function.
+That's where the `socket.io-express-session` library comes in. It's a very simple library that's a wrapper around socket.io. All it does is grab session information during the handshake and then pass it to socket.io's `connection` function. You can access session via `socket.handshake.session` w/in connection listener.
 
 ```javascript
 //instead of
@@ -112,6 +113,9 @@ io.sockets.on('connection', function (socket) {
     //do pubsub here
     ...
 })
+
+var socketIOExpressSession = require('socket.io-express-session'); 
+io.use(socketIOExpressSession(app.session)); // session support
 
 //But with sessions.sockets.io, you'll get session info
 
@@ -122,10 +126,10 @@ io.sockets.on('connection', function (socket) {
 var SessionSockets = require('session.socket.io');
 var sessionSockets = new SessionSockets(io, sessionStore, cookieParser, 'jsessionid');
 
-sessionSockets.on('connection', function (err, socket, session) {
+io.on('connection', function (socket) {
 
     //get info from session
-    var user = session.user;
+    var user = socket.handshake.session.user;
 
     //Close socket if user is not logged in
     if (!user)
@@ -337,7 +341,10 @@ var tryReconnect = function () {
         .success(function () {
             console.log("http request succeeded");
             //reconnect the socket AFTER we got jsessionid set
-            socket.socket.reconnect();
+            io.connect('http://' + host, {
+                        reconnect: false,
+                        'try multiple transports': false
+                    });
             clearInterval(intervalID);
         }).error(function (err) {
             console.log("http request failed (probably server not up yet)");
