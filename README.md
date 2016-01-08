@@ -468,3 +468,4 @@ Checking redispubsub... OK
 #### Credits
 
 Front end UI: <a href="https://github.com/steffenwt/nodejs-pub-sub-chat-demo">https://github.com/steffenwt/nodejs-pub-sub-chat-demo</a></p>
+Test
