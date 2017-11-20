@@ -180,7 +180,7 @@ With the above configuration, sessions will now be stored in Redis. Also, if one
 
 ## Socket.io as pub-sub server
 
-So far with the above setup our sessions are taken care of - but if we are using socket.io's default pub-sub mechanism, it will work only for 1 sever instance.
+So far with the above setup our sessions are taken care of - but if we are using socket.io's default pub-sub mechanism, it will work only for 1 server instance.
 i.e. if user1 and user2 are on server instance #1, they can both chat with each other. If they are on different server instances they cannot do so.
 
 ```javascript
